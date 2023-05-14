@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include colprocah_colegio *.css
+recursive-include colprocah_colegio *.csv
+recursive-include colprocah_colegio *.html
+recursive-include colprocah_colegio *.ico
+recursive-include colprocah_colegio *.js
+recursive-include colprocah_colegio *.json
+recursive-include colprocah_colegio *.md
+recursive-include colprocah_colegio *.png
+recursive-include colprocah_colegio *.py
+recursive-include colprocah_colegio *.svg
+recursive-include colprocah_colegio *.txt
+recursive-exclude colprocah_colegio *.pyc
