@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2023-05-15 22:45:40.739268",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "titulo_academico",
+  "centro_estudios",
+  "anio_egreso",
+  "campo_especializacion",
+  "nivel_estudios",
+  "titulo_adjunto"
+ ],
+ "fields": [
+  {
+   "fieldname": "titulo_academico",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "T\u00edtulo Acad\u00e9mico",
+   "options": "Titulo Academico",
+   "reqd": 1
+  },
+  {
+   "fieldname": "centro_estudios",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Centro de Estudios",
+   "options": "Centro Estudios",
+   "reqd": 1
+  },
+  {
+   "fieldname": "anio_egreso",
+   "fieldtype": "Int",
+   "label": "A\u00f1o Egreso"
+  },
+  {
+   "fieldname": "campo_especializacion",
+   "fieldtype": "Link",
+   "label": "Campo de Especializaci\u00f3n",
+   "options": "Campo Especializacion"
+  },
+  {
+   "fieldname": "nivel_estudios",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Nivel",
+   "options": "Secundaria\nPregrado\nM\u00e1ster\nDoctorado",
+   "reqd": 1
+  },
+  {
+   "fieldname": "titulo_adjunto",
+   "fieldtype": "Attach",
+   "label": "T\u00edtulo"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-05-15 22:48:10.957284",
+ "modified_by": "Administrator",
+ "module": "Colprocah Colegio",
+ "name": "Estudios Realizados",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

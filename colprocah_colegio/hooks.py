@@ -10,6 +10,12 @@ app_license = "MIT"
 # Includes in <head>
 # ------------------
 
+fixtures = [
+  {
+    "dt": "Custom Field", "filters": [["module","like","Colprocah Colegio"]]
+  }
+]
+
 # include js, css files in header of desk.html
 # app_include_css = "/assets/colprocah_colegio/css/colprocah_colegio.css"
 # app_include_js = "/assets/colprocah_colegio/js/colprocah_colegio.js"
