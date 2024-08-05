@@ -1,0 +1,68 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"4pAxXudihd\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Colegio</span>\",\"col\":12}},{\"id\":\"GEt8fUMyuO\",\"type\":\"card\",\"data\":{\"card_name\":\"Colegiados\",\"col\":4}},{\"id\":\"lzcl5Tvtps\",\"type\":\"card\",\"data\":{\"card_name\":\"Seguros\",\"col\":4}}]",
+ "creation": "2024-08-04 16:57:49.199386",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "share-people",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Colegio",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Colegiados",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Cliente",
+   "link_count": 0,
+   "link_to": "Customer",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Seguros",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Planes de Seguros",
+   "link_count": 0,
+   "link_to": "Plan Seguro",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2024-08-04 18:51:51.261396",
+ "modified_by": "Administrator",
+ "module": "Colprocah Colegio",
+ "name": "Colegio",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 28.0,
+ "shortcuts": [],
+ "title": "Colegio"
+}
