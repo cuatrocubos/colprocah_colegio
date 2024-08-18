@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:aseguradora_name",
+ "creation": "2024-08-06 17:53:38.301137",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "aseguradora_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "aseguradora_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Nombre Aseguradora",
+   "reqd": 1,
+   "unique": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-08-06 17:55:03.403095",
+ "modified_by": "Administrator",
+ "module": "Seguros",
+ "name": "Aseguradora",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

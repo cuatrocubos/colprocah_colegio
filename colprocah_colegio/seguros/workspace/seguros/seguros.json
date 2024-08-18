@@ -1,0 +1,59 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"X8-WCnKMU8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Seguros</span>\",\"col\":12}},{\"id\":\"aaMs3fquaG\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuraci\u00f3n\",\"col\":4}}]",
+ "creation": "2024-08-06 17:46:41.992191",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "permission",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Seguros",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Configuraci\u00f3n",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Aseguradora",
+   "link_count": 0,
+   "link_to": "Aseguradora",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Plan de Seguro",
+   "link_count": 0,
+   "link_to": "Plan de Seguro",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2024-08-06 17:55:35.900062",
+ "modified_by": "Administrator",
+ "module": "Seguros",
+ "name": "Seguros",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "Colegio",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 29.0,
+ "shortcuts": [],
+ "title": "Seguros"
+}
