@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"X8-WCnKMU8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Seguros</span>\",\"col\":12}},{\"id\":\"aaMs3fquaG\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuraci\u00f3n\",\"col\":4}}]",
+ "content": "[{\"id\":\"X8-WCnKMU8\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Seguros</span>\",\"col\":12}},{\"id\":\"aaMs3fquaG\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuraci\u00f3n\",\"col\":4}},{\"id\":\"S0Hl5pjtxY\",\"type\":\"card\",\"data\":{\"card_name\":\"Polizas\",\"col\":4}}]",
  "creation": "2024-08-06 17:46:41.992191",
  "custom_blocks": [],
  "docstatus": 0,
@@ -17,7 +17,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Configuraci\u00f3n",
-   "link_count": 2,
+   "link_count": 1,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -35,7 +35,26 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Plan de Seguro",
+   "label": "Polizas",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Poliza de Seguro",
+   "link_count": 0,
+   "link_to": "Poliza de Seguro",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Planes",
    "link_count": 0,
    "link_to": "Plan de Seguro",
    "link_type": "DocType",
@@ -43,7 +62,7 @@
    "type": "Link"
   }
  ],
- "modified": "2024-08-06 17:55:35.900062",
+ "modified": "2024-12-17 09:40:23.806229",
  "modified_by": "Administrator",
  "module": "Seguros",
  "name": "Seguros",

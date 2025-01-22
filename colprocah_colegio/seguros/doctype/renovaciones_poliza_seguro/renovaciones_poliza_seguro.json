@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-12-16 14:21:32.307534",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "fecha_inicio",
+  "fecha_vencimiento"
+ ],
+ "fields": [
+  {
+   "fieldname": "fecha_inicio",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha de Inicio",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fecha_vencimiento",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Fecha de Vencimiento",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-12-16 14:22:07.703112",
+ "modified_by": "Administrator",
+ "module": "Seguros",
+ "name": "Renovaciones Poliza Seguro",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
