@@ -116,6 +116,14 @@ fixtures = [
 #	}
 # }
 
+doc_events = {
+    "Sales Invoice": {
+        "before_insert": "colprocah_colegio.events.sales_invoice.set_original_posting_date"
+    }
+}
+
+doctype_list_js = {"Customer": "public/js/customer_list.js"}
+
 # Scheduled Tasks
 # ---------------
 
