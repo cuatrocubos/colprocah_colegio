@@ -1,0 +1,110 @@
+{% var ci = report.report_doc && report.report_doc.report_summary
+    ? JSON.parse(report.report_doc.report_summary)
+    : {};
+%}
+
+<!-- HEADER -->
+<div style="margin-bottom: 20px;">
+    <table style="width: 100%; border: none;">
+        <tr>
+            <td style="width: 70%; vertical-align: top;">
+                <h2 style="margin: 0;">{%= __("Ingresos por Fecha Original de Emisión") %}</h2>
+
+                {% if (ci.customer_name) { %}
+                <h4 style="margin: 6px 0 2px 0;">{%= ci.customer_name %}</h4>
+                {% } %}
+
+                <table style="margin-top: 8px; font-size: 12px; border: none;">
+                    {% if (ci.codigo_colegiado) { %}
+                    <tr>
+                        <td style="padding: 2px 10px 2px 0; color: #777;">
+                            {%= __("Código Colegiado") %}:
+                        </td>
+                        <td style="padding: 2px 0;"><b>{%= ci.codigo_colegiado %}</b></td>
+                    </tr>
+                    {% } %}
+                    {% if (ci.fecha_ingreso) { %}
+                    <tr>
+                        <td style="padding: 2px 10px 2px 0; color: #777;">
+                            {%= __("Fecha de Ingreso") %}:
+                        </td>
+                        <td style="padding: 2px 0;">
+                            <b>{%= frappe.datetime.str_to_user(ci.fecha_ingreso) %}</b>
+                        </td>
+                    </tr>
+                    {% } %}
+                </table>
+            </td>
+
+            <td style="width: 30%; text-align: right; vertical-align: top; font-size: 12px;">
+                {% if (filters.from_date) { %}
+                <div style="color: #777;">{%= __("Período") %}</div>
+                <div>
+                    <b>
+                        {%= frappe.datetime.str_to_user(filters.from_date) %}
+                        {%= __("to") %}
+                        {%= frappe.datetime.str_to_user(filters.to_date) %}
+                    </b>
+                </div>
+                {% } %}
+                <div style="margin-top: 8px; color: #777;">{%= __("Fecha de Impresión") %}</div>
+                <div>
+                    <b>{%= frappe.datetime.str_to_user(frappe.datetime.get_today()) %}</b>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<hr style="border-top: 2px solid #2c3e50; margin-bottom: 16px;">
+
+<!-- TABLE -->
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>{%= __("Año") %}</th>
+            <th class="text-right">{%= __("Enero") %}</th>
+            <th class="text-right">{%= __("Febrero") %}</th>
+            <th class="text-right">{%= __("Marzo") %}</th>
+            <th class="text-right">{%= __("Abril") %}</th>
+            <th class="text-right">{%= __("Mayo") %}</th>
+            <th class="text-right">{%= __("Junio") %}</th>
+            <th class="text-right">{%= __("Julio") %}</th>
+            <th class="text-right">{%= __("Agosto") %}</th>
+            <th class="text-right">{%= __("Septiembre") %}</th>
+            <th class="text-right">{%= __("Octubre") %}</th>
+            <th class="text-right">{%= __("Noviembre") %}</th>
+            <th class="text-right">{%= __("Diciembre") %}</th>
+            <th class="text-right">{%= __("Total Pagado") %}</th>
+            <th class="text-right">{%= __("Mora") %}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for (var i = 0, l = data.length; i < l; i++) { %}
+        <tr>
+            <td><b>{%= data[i].year %}</b></td>
+            <td class="text-right">{%= format_currency(data[i].month_01) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_02) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_03) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_04) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_05) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_06) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_07) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_08) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_09) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_10) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_11) %}</td>
+            <td class="text-right">{%= format_currency(data[i].month_12) %}</td>
+            <td class="text-right"><b>{%= format_currency(data[i].total_pagado) %}</b></td>
+            <td class="text-right"
+                style="color: {% if (data[i].mora > 0) { %}red{% } else { %}inherit{% } %}">
+                <b>{%= format_currency(data[i].mora) %}</b>
+            </td>
+        </tr>
+        {% } %}
+    </tbody>
+</table>
+
+<p class="text-right text-muted">
+    {%= __("Printed on {0}", [frappe.datetime.str_to_user(frappe.datetime.get_datetime_as_string())]) %}
+</p>
