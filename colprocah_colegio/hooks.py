@@ -118,7 +118,12 @@ fixtures = [
 
 doc_events = {
     "Sales Invoice": {
-        "before_insert": "colprocah_colegio.events.sales_invoice.set_original_posting_date"
+        "before_insert": "colprocah_colegio.events.sales_invoice.set_original_posting_date",
+        "validate": "colprocah_colegio.fam_cobros.validate_loan_lines"
+    },
+    "Payment Entry": {
+        "on_submit": "colprocah_colegio.fam_cobros.create_loan_repayments",
+        "on_cancel": "colprocah_colegio.fam_cobros.cancel_loan_repayments"
     },
     "Loan": {
         "validate": [
@@ -133,8 +138,12 @@ doc_events = {
     }
 }
 
-after_migrate = ["colprocah_colegio.lending.setup_loan_fields"]
+after_migrate = [
+    "colprocah_colegio.lending.setup_loan_fields",
+    "colprocah_colegio.fam_cobros.setup_fam_collections"
+]
 
+doctype_js = {"Sales Invoice": "public/js/sales_invoice.js"}
 doctype_list_js = {"Customer": "public/js/customer_list.js"}
 
 # Scheduled Tasks

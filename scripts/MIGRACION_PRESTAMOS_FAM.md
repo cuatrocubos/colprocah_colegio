@@ -159,18 +159,78 @@ Aplicado en desarrollo; falta en producción.
 Objetivo: que cada cuota de un préstamo Lending cobrada en COLPROCAH quede como *Loan Repayment* en FAM,
 por préstamo y en la fecha del pago, con la deuda COLPROCAH → FAM controlada hasta el traslado.
 
-1. **Artículo propio para préstamos Lending.** Nuevo artículo (p. ej. `PREST-FAM`) contra una cuenta de
-   pasivo nueva en COLPROCAH ("CXP FAM préstamos Lending"). La línea lleva un campo personalizado con el
-   Loan de FAM, obligatorio y validado (el préstamo debe ser del mismo cliente). Los préstamos anteriores a
-   2026 siguen con `PREST-PER` y el flujo actual: los dos saldos no se mezclan.
-2. **Repago automático en FAM.** Al validar un Payment Entry de COLPROCAH que paga una factura con líneas
-   `PREST-FAM`, un hook de `colprocah_colegio` crea en FAM un Loan Repayment por línea, con la fecha del
-   pago; al anular el Payment Entry se anula el repago. El repago usa un Modo de Pago "Cobro COLPROCAH" cuya
-   cuenta en FAM es una cuenta por cobrar intercompañía ("CXC COLPROCAH – cobros de préstamos"); Lending ya
-   toma la cuenta del Modo de Pago. En FAM: Dr CXC COLPROCAH / Cr capital e intereses.
-3. **Traslados.** Las transferencias globales liquidan la cuenta intercompañía: en COLPROCAH Dr la CXP
-   nueva / Cr banco; en FAM Dr banco / Cr CXC COLPROCAH. Un reporte mensual concilia la CXC de FAM con la
-   CXP de COLPROCAH.
+Pasos 1–3 **implementados** en `colprocah_colegio/fam_cobros.py` (probados en desarrollo; ver 6.1):
+
+1. **Artículo propio para préstamos Lending.** Artículo `PREST-FAM` "PRESTAMO PERSONAL FAM" contra la
+   cuenta nueva `20001030 - CXP FAM PRESTAMOS LENDING` de COLPROCAH. La línea lleva el campo *Préstamo FAM*
+   (`prestamo_fam`, enlace a Loan, obligatorio para `PREST-FAM`) y muestra su *Número de Préstamo*. Al
+   validar la factura se exige que el préstamo esté validado, sea de FAM, del mismo cliente y no esté
+   cerrado; el selector solo ofrece los préstamos abiertos del cliente. Los préstamos anteriores a 2026
+   siguen con `PREST-PER` y el flujo actual: los dos saldos no se mezclan.
+2. **Repago automático en FAM.** Al validar un Payment Entry de COLPROCAH (tipo *Receive*), por cada
+   factura que queda **pagada por completo** se crea en FAM un Loan Repayment (*Normal Repayment*) por cada
+   línea `PREST-FAM`, con la fecha del pago, contra la cuenta nueva `11301026 - CXC COLPROCAH COBROS
+   PRESTAMOS` de FAM (se asigna como cuenta de pago del repago; un Modo de Pago no sirve porque ERPNext solo
+   acepta cuentas de banco, caja o por cobrar con tercero). En FAM: Dr 11301026 / Cr 11301022 capital /
+   Cr intereses. El repago guarda la factura, la línea y el pago de COLPROCAH (`colprocah_sales_invoice`,
+   `colprocah_invoice_item`, `colprocah_payment_entry`).
+   - **Monto de la línea, el que sea.** El monto de `PREST-FAM` se aplica tal cual al préstamo, sea menor o
+     mayor que la cuota. Antes se generan en Lending las cuotas vencidas a la fecha del pago; lo que está
+     vencido va en un *Normal Repayment* (intereses primero; si no alcanza, el resto queda vencido) y
+     **cualquier excedente** en un *Pre Payment*, que reprograma el préstamo (misma cuota, menos plazo).
+     Un *Normal Repayment* por encima de lo vencido rebaja capital pero deja el plan igual, y las cuotas
+     siguientes cobrarían intereses sobre el saldo anterior (en la prueba: 713.20 en vez de 458.79).
+   - **Pagos parciales de la factura:** las facturas se pagan siempre completas. Si una queda con saldo no
+     se crea el repago y se avisa; se crea cuando otro pago la deja en cero.
+   - **Anulación:** al anular el Payment Entry se anulan los repagos de las facturas que pagaba (la factura
+     ya no está pagada por completo); al pagarla de nuevo se vuelven a crear.
+   - La parte de FAM corre como Administrator: Lending revisa permisos en las cuotas, intereses y
+     reprogramaciones que crea, y quien registra el pago no tiene roles de Lending. El repago guarda el pago
+     y la factura de COLPROCAH que lo originaron.
+3. **Traslados y conciliación.** Las transferencias de COLPROCAH a FAM se registran a mano: en COLPROCAH
+   Dr `20001030` / Cr banco; en FAM Dr banco / Cr `11301026`. El reporte **Conciliacion Prestamos FAM
+   COLPROCAH** (a una fecha) compara la CXP de COLPROCAH con la CXC de FAM, muestra las cuotas `PREST-FAM`
+   sin repago (factura con saldo, pagada sin repago o nota de crédito) y lo que queda sin explicar
+   (traslados registrados solo en una empresa).
+
+Las cuentas, el artículo y los campos se crean solos en `bench migrate` (`after_migrate`), solo si Lending
+y las dos empresas existen.
+
+### 6.1 Prueba en desarrollo
+
+Con un préstamo FAM de 60,000 (desembolso 15-10-2026, primera cuota 15-11-2026) y una factura COLPROCAH
+del 18-11-2026 con CO-I 120 + `PREST-FAM` 3,799.81, todo revertido al final:
+
+- Factura sin préstamo y con préstamo de otro cliente: rechazadas.
+- Pago parcial de 1,000: sin repago, aviso.
+- Pago del saldo: repago de 3,799.81 (capital 2,933.51, intereses 866.30) con Dr 11301026 3,799.81 /
+  Cr 11301022 2,933.51 / Cr 11301003 866.30; el reporte cuadra en cero.
+- Anulación del pago: repago anulado; nuevo pago: repago creado otra vez.
+
+Montos distintos a la cuota, con facturas y pagos registrados por un usuario de capítulo (solo *Sales
+User*), préstamo de 60,000 con cuotas de octubre y noviembre vencidas (7,599.62):
+
+| Monto `PREST-FAM` | Resultado en FAM |
+|---|---|
+| 3,000 (menos de lo vencido) | Normal Repayment 3,000 (intereses 838.36); quedan 4,599.62 vencidos |
+| 4,599.62 (el resto) | Normal Repayment; nada vencido |
+| 10,000 (nada vencido) | Pre Payment; plan reprogramado de 18 a 15 cuotas |
+| 9,000 (otro préstamo, 7,599.62 vencidos) | Normal Repayment 7,599.62 + Pre Payment 1,400.38 |
+| Anulación de ese pago | Ambos repagos anulados; plan, capital y cuotas vencidas como antes |
+
+### 6.2 Para poner en marcha
+
+- `bench migrate` en producción (crea cuentas, artículo y campos).
+- Dar el rol **Loan Reporter** a quienes facturan en COLPROCAH (contabilidad, capítulos), para que puedan
+  buscar el préstamo en la línea de la factura.
+- Usar `PREST-FAM` (no `PREST-PER`) para las cuotas de los préstamos registrados en Lending.
+- `validate_normal_repayment` del producto puede quedar activo para este flujo: el *Normal Repayment* nunca
+  supera lo vencido (el script de reconstrucción sí necesita que esté desactivado).
+- Las facturas de prueba en desarrollo se hicieron como *Recibo*: la numeración fiscal de
+  `autorizacion_impresion` exige una autorización de impresión vigente y fecha del mes en curso.
+
+### 6.3 Siguientes pasos
+
 4. **Facturación automática (fase 2).** Agregar la línea `PREST-FAM` a la factura mensual a partir de las
    cuotas pendientes del préstamo en Lending, en lugar de digitarla.
 5. **Planilla y deducciones de patronos.** Para empleados de COLPROCAH y remesas de patronos, importación
@@ -180,9 +240,8 @@ por préstamo y en la fecha del pago, con la deuda COLPROCAH → FAM controlada 
    24 % y 5 días de gracia, definir el día de vencimiento (o una gracia mayor) para no cobrar recargo a quien
    paga a tiempo. Verificar antes por qué la prueba no generó recargos.
 
-Decisiones pendientes: tratamiento de pagos parciales de la factura mensual (propuesta: crear el repago solo
-con la factura pagada por completo y señalar los parciales), artículo y cuentas nuevos vs. reutilizar
-`PREST-PER` con vínculo al préstamo, y aprobación para implementar los pasos 1–3.
+Decisiones tomadas al implementar: artículo y cuentas nuevos (no reutilizar `PREST-PER`) y repago solo con
+la factura pagada por completo.
 
 ## 7. Procedimiento en producción
 
@@ -215,7 +274,9 @@ asiento. Los CSV contienen datos de colegiados: no se suben al repositorio.
 
 ## 9. Pendientes
 
-- Implementar el plan de la sección 6 (con las decisiones pendientes).
+- Plan de la sección 6: pasos 4–6 (facturación automática, planilla y patronos, vencimientos).
+- Pagos aplicados a facturas `PREST-FAM` por otros medios (asiento, conciliación de pagos) no crean repago:
+  aparecen en el reporte de conciliación como "pagada sin repago".
 - Confirmar con FAM los casos 2026 dudosos (003/26, 018/26) y los préstamos de empleadas por planilla.
 - Recargo por mora: Lending no cobró recargo en cuotas pagadas con atraso (producto: 24 %, 5 días de
   gracia); no se investigó.
