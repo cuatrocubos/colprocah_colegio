@@ -119,8 +119,21 @@ fixtures = [
 doc_events = {
     "Sales Invoice": {
         "before_insert": "colprocah_colegio.events.sales_invoice.set_original_posting_date"
+    },
+    "Loan": {
+        "validate": [
+            "colprocah_colegio.lending.set_applicant_details",
+            "colprocah_colegio.lending.validate_numero_prestamo"
+        ],
+        "before_update_after_submit": "colprocah_colegio.lending.validate_numero_prestamo",
+        "on_update_after_submit": "colprocah_colegio.lending.sync_numero_prestamo"
+    },
+    "Loan Application": {
+        "validate": "colprocah_colegio.lending.set_applicant_details"
     }
 }
+
+after_migrate = ["colprocah_colegio.lending.setup_loan_fields"]
 
 doctype_list_js = {"Customer": "public/js/customer_list.js"}
 
