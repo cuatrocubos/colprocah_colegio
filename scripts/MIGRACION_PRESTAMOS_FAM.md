@@ -225,12 +225,12 @@ User*), préstamo de 60,000 con cuotas de octubre y noviembre vencidas (7,599.62
 
 ### 6.2 Para poner en marcha
 
-- `bench migrate` en producción (crea cuentas, artículo y campos).
-- Dar el rol **Loan Reporter** a quienes facturan en COLPROCAH (contabilidad, capítulos), para que puedan
-  buscar el préstamo en la línea de la factura.
+Hecho en producción el 18–19-11-2026 (detalle en la sección 10): código desplegado, configuración de Lending
+de FAM, Loan Product y rol **Loan Reporter** para quienes facturan. Falta solo operar:
+
 - Usar `PREST-FAM` (no `PREST-PER`) para las cuotas de los préstamos registrados en Lending.
-- `validate_normal_repayment` del producto puede quedar activo para este flujo: el *Normal Repayment* nunca
-  supera lo vencido (el script de reconstrucción sí necesita que esté desactivado).
+- `validate_normal_repayment` no afecta este flujo: el *Normal Repayment* nunca supera lo vencido. Solo
+  importa para repagos digitados a mano en Lending.
 - Las facturas de prueba en desarrollo se hicieron como *Recibo*: la numeración fiscal de
   `autorizacion_impresion` exige una autorización de impresión vigente y fecha del mes en curso.
 
@@ -248,7 +248,7 @@ User*), préstamo de 60,000 con cuotas de octubre y noviembre vencidas (7,599.62
 Decisiones tomadas al implementar: artículo y cuentas nuevos (no reutilizar `PREST-PER`) y repago solo con
 la factura pagada por completo.
 
-## 7. Procedimiento en producción
+## 7. Procedimiento de migración en producción (en pausa)
 
 Desde el directorio `sites` del bench. Todo es simulación (se revierte) salvo `--commit`.
 
@@ -282,8 +282,54 @@ asiento. Los CSV contienen datos de colegiados: no se suben al repositorio.
 - Plan de la sección 6: pasos 4–6 (facturación automática, planilla y patronos, vencimientos).
 - Pagos aplicados a facturas `PREST-FAM` por otros medios (asiento, conciliación de pagos) no crean repago:
   aparecen en el reporte de conciliación como "pagada sin repago".
+- Condiciones reales del producto *Prestamo FAM Empleados* (los valores distintos de la tasa son de
+  prueba) y la comisión por desembolso como cargo del préstamo (los préstamos anteriores cobraban ~3 %).
 - Confirmar con FAM los casos 2026 dudosos (003/26, 018/26) y los préstamos de empleadas por planilla.
 - Recargo por mora: Lending no cobró recargo en cuotas pagadas con atraso (producto: 24 %, 5 días de
   gracia); no se investigó.
+- Reconstrucción de los préstamos 2026 (`fam_legacy_loans.py build`) **en pausa**. Si se retoma, debe
+  aplicar el mismo reparto *Normal Repayment* + *Pre Payment* de la sección 6 a los pagos mayores a la
+  cuota; hoy los registra como *Normal Repayment* y las cuotas siguientes cobrarían intereses de más.
 - En producción el campo `naming_series` de Loan existe (personalizado); el script solo asigna la serie
   cuando falta el campo.
+
+## 10. Producción (`sac.colprocah.com`, 18–19-11-2026)
+
+Bench `~/fp-16/frappe-bench-colprocah` en `erp.cuatrocubos.com`. Respaldo de la base antes de cada cambio
+en `/mnt/volume_nyc1_01/backups/dbs/sac.colprocah.com/` (`20261118_233943`, `20261118_235047`,
+`20261119_000145`).
+
+### Código
+
+`colprocah_colegio` en `version-16` hasta `fdb0ddc`, con `bench migrate` y reinicio de web y workers.
+Crea el artículo `PREST-FAM` y los campos de la sección 6 y los de préstamo (`codigo_colegiado`,
+`numero_prestamo`, `applicant_name`).
+
+Cuentas: se usan las que ya existían, **`20001004 - CXPAGAR FAM PRESTAMOS`** (COLPROCAH) y **`11301009 -
+CXC PRESTAMOS FAM`** (FAM). En producción el número `20001030` es `CXP-RETENCION DEL 12.5`; por eso las
+cuentas se buscan por número y nombre. La cuenta `11301026` creada en el primer despliegue se eliminó (sin
+movimientos).
+
+### Lending de FAM
+
+Copiado de desarrollo y comparado campo por campo después de aplicarlo (igual, salvo el cargo de prueba):
+
+| Qué | Valor |
+|---|---|
+| Tipos de cuenta | `11301002`, `11301003`, `11301018` → Receivable; `11301020`, `40001026` → (en blanco) |
+| Cuentas nuevas | `20001020 SALDOS A FAVOR DE PRESTATARIOS`, `20001021 DEPOSITOS EN GARANTIA DE PRESTATARIOS`, `40001029 RECUPERACION DE PRESTAMOS CASTIGADOS` |
+| Secuencias de cobro | *Compensacion de activos estandar* (cuota, interés adicional, mora, cargos) y *Compensacion de activos castigados* (capital, interés, interés adicional, mora, cargos) |
+| Empresa FAM | cuenta por cobrar por defecto `11301002`; devengo mensual; **Actual/365**; secuencias estándar/subestándar → estándar, castigados/liquidación → castigados; **contabilidad de préstamos activada** |
+| Loan Product | *Prestamo FAM Empleados*: 17 %, máximo 100,000, mora 24 % con 5 días de gracia, NPA a 90 días, sin redondeo de cuota, interés de período interrumpido amortizado en el plazo; cuentas como en desarrollo; **sin cargos**; `validate_normal_repayment` desactivado |
+
+No se configuraron artículos de cargo ni cuentas de interés adicional: solo hacen falta si se cobran.
+
+### Roles
+
+**Loan Reporter** (leer y buscar préstamos en la línea de la factura) para `contabilidad@colprocah.com`
+(que ya tenía Loan Manager) y los 10 usuarios `capitulo.*`. Estos tienen el perfil de roles **Sales**, que
+reescribe sus roles cada vez que se guarda el usuario, así que el rol se agregó al perfil (ahora *Sales
+User*, *Stock User*, *Loan Reporter*); solo ellos lo usan. Para quitarlo o dárselo a un capítulo nuevo, se
+cambia el perfil, no el usuario.
+
+Verificado como `capitulo.norte@`: puede leer y buscar préstamos. Sin préstamos ni cargos aún en producción.
