@@ -162,11 +162,12 @@ por préstamo y en la fecha del pago, con la deuda COLPROCAH → FAM controlada 
 Pasos 1–3 **implementados** en `colprocah_colegio/fam_cobros.py` (probados en desarrollo; ver 6.1):
 
 1. **Artículo propio para préstamos Lending.** Artículo `PREST-FAM` "PRESTAMO PERSONAL FAM" contra la
-   cuenta nueva `20001030 - CXP FAM PRESTAMOS LENDING` de COLPROCAH. La línea lleva el campo *Préstamo FAM*
+   cuenta por pagar a FAM de siempre, `20001004 - CXPAGAR FAM PRESTAMOS` (la misma de `PREST-PER`; en
+   producción el número 20001030 ya es `CXP-RETENCION DEL 12.5`). La línea lleva el campo *Préstamo FAM*
    (`prestamo_fam`, enlace a Loan, obligatorio para `PREST-FAM`) y muestra su *Número de Préstamo*. Al
    validar la factura se exige que el préstamo esté validado, sea de FAM, del mismo cliente y no esté
    cerrado; el selector solo ofrece los préstamos abiertos del cliente. Los préstamos anteriores a 2026
-   siguen con `PREST-PER` y el flujo actual: los dos saldos no se mezclan.
+   siguen con `PREST-PER`; en FAM los dos se separan (11301026 para Lending, 11301001 para los anteriores).
 2. **Repago automático en FAM.** Al validar un Payment Entry de COLPROCAH (tipo *Receive*), por cada
    factura que queda **pagada por completo** se crea en FAM un Loan Repayment (*Normal Repayment*) por cada
    línea `PREST-FAM`, con la fecha del pago, contra la cuenta nueva `11301026 - CXC COLPROCAH COBROS
@@ -188,13 +189,15 @@ Pasos 1–3 **implementados** en `colprocah_colegio/fam_cobros.py` (probados en 
      reprogramaciones que crea, y quien registra el pago no tiene roles de Lending. El repago guarda el pago
      y la factura de COLPROCAH que lo originaron.
 3. **Traslados y conciliación.** Las transferencias de COLPROCAH a FAM se registran a mano: en COLPROCAH
-   Dr `20001030` / Cr banco; en FAM Dr banco / Cr `11301026`. El reporte **Conciliacion Prestamos FAM
-   COLPROCAH** (a una fecha) compara la CXP de COLPROCAH con la CXC de FAM, muestra las cuotas `PREST-FAM`
-   sin repago (factura con saldo, pagada sin repago o nota de crédito) y lo que queda sin explicar
-   (traslados registrados solo en una empresa).
+   Dr `20001004` / Cr banco; en FAM Dr banco / Cr `11301026` por la parte de préstamos Lending y Cr
+   `11301001` por la de préstamos anteriores. Como `20001004` es compartida, el reporte **Conciliacion
+   Prestamos FAM COLPROCAH** (a una fecha) no compara saldos de cuentas: compara las cuotas `PREST-FAM`
+   facturadas en COLPROCAH con los repagos creados en FAM, detalla las cuotas sin repago (factura con
+   saldo, pagada sin repago o nota de crédito) y muestra el saldo de `11301026`, pendiente de traslado.
 
-Las cuentas, el artículo y los campos se crean solos en `bench migrate` (`after_migrate`), solo si Lending
-y las dos empresas existen.
+La cuenta de FAM, el artículo y los campos se crean solos en `bench migrate` (`after_migrate`), solo si
+Lending y las dos empresas existen. Las cuentas se buscan por número **y nombre**: si el número lo usa otra
+cuenta, el migrate se detiene con un error en vez de usar la cuenta equivocada.
 
 ### 6.1 Prueba en desarrollo
 

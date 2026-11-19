@@ -4,9 +4,9 @@ from frappe.utils import flt, getdate, today
 
 from colprocah_colegio.fam_cobros import COLPROCAH, FAM, ITEM, get_account, is_active
 
-# COLPROCAH's payable to FAM (credited by PREST-FAM lines, debited by transfers) should equal FAM's
-# receivable from COLPROCAH (debited by Loan Repayments, credited by transfers). The difference is the
-# PREST-FAM lines without a repayment, plus transfers recorded in only one of the two companies.
+# COLPROCAH's payable to FAM is shared with the legacy PREST-PER loans, so its balance can't be compared.
+# Instead: PREST-FAM lines billed in COLPROCAH vs the Loan Repayments they produced in FAM; the difference
+# is the lines without a repayment. FAM's receivable from COLPROCAH is what is still to be transferred.
 
 
 def execute(filters=None):
@@ -14,21 +14,19 @@ def execute(filters=None):
 		frappe.throw(_("Lending y las empresas COLPROCAH y FAM son necesarios para este reporte."))
 
 	to_date = getdate((filters or {}).get("to_date") or today())
-	payable = balance(get_account(COLPROCAH), to_date, sign=-1)
-	receivable = balance(get_account(FAM), to_date)
+	billed = billed_lines(to_date)
+	repaid = repayments(to_date)
 	lines = lines_without_repayment(to_date)
 	pending = sum(flt(line.amount) for line in lines)
+	receivable = get_account(FAM)
 
 	data = [
-		summary(_("Por pagar a FAM en COLPROCAH ({0})").format(get_account(COLPROCAH)), payable),
-		summary(_("Por cobrar a COLPROCAH en FAM ({0})").format(get_account(FAM)), receivable),
-		summary(_("Diferencia"), payable - receivable, bold=True),
+		summary(_("Cuotas {0} facturadas en COLPROCAH").format(ITEM), billed),
+		summary(_("Repagos en FAM de cuotas cobradas en COLPROCAH"), repaid),
+		summary(_("Diferencia"), billed - repaid, bold=True),
 		summary(_("Cuotas {0} sin repago en FAM (detalle abajo)").format(ITEM), pending),
-		summary(
-			_("Sin explicar: traslados registrados solo en una empresa u otras diferencias"),
-			payable - receivable - pending,
-			bold=True,
-		),
+		summary(_("Sin explicar"), billed - repaid - pending, bold=True),
+		summary(_("Pendiente de traslado de COLPROCAH a FAM ({0})").format(receivable), balance(receivable, to_date)),
 	]
 	if lines:
 		data.append({})
@@ -52,13 +50,36 @@ def summary(concept, amount, bold=False):
 	return {"concept": concept, "amount": flt(amount, 2), "bold": int(bold)}
 
 
-def balance(account, to_date, sign=1):
-	value = frappe.db.sql(
-		"""select coalesce(sum(debit - credit), 0) from `tabGL Entry`
-		where account = %s and is_cancelled = 0 and posting_date <= %s""",
-		(account, to_date),
-	)[0][0]
-	return sign * flt(value)
+def balance(account, to_date):
+	return flt(
+		frappe.db.sql(
+			"""select coalesce(sum(debit - credit), 0) from `tabGL Entry`
+			where account = %s and is_cancelled = 0 and posting_date <= %s""",
+			(account, to_date),
+		)[0][0]
+	)
+
+
+def billed_lines(to_date):
+	return flt(
+		frappe.db.sql(
+			"""select coalesce(sum(sii.base_amount), 0)
+			from `tabSales Invoice Item` sii join `tabSales Invoice` si on si.name = sii.parent
+			where si.docstatus = 1 and si.company = %s and sii.item_code = %s and si.posting_date <= %s""",
+			(COLPROCAH, ITEM, to_date),
+		)[0][0]
+	)
+
+
+def repayments(to_date):
+	return flt(
+		frappe.db.sql(
+			"""select coalesce(sum(amount_paid), 0) from `tabLoan Repayment`
+			where docstatus = 1 and company = %s and ifnull(colprocah_invoice_item, '') != ''
+				and value_date <= %s""",
+			(FAM, to_date),
+		)[0][0]
+	)
 
 
 def lines_without_repayment(to_date):

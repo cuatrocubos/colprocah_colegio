@@ -9,19 +9,19 @@ from colprocah_colegio.lending import lending_installed
 
 # Cuotas de préstamos FAM (Lending) cobradas en COLPROCAH.
 #
-# COLPROCAH factura la cuota con el artículo PREST-FAM, ligado al préstamo de FAM, contra una cuenta por
-# pagar a FAM. Cuando un Payment Entry de COLPROCAH deja la factura pagada, se crea en FAM un Loan Repayment
-# por línea contra la cuenta por cobrar a COLPROCAH; los traslados de COLPROCAH a FAM liquidan ambas cuentas.
-# Los préstamos anteriores a 2026 siguen con PREST-PER y el flujo de siempre.
+# COLPROCAH factura la cuota con el artículo PREST-FAM, ligado al préstamo de FAM, contra su cuenta por pagar
+# a FAM de siempre (la misma de PREST-PER). Cuando un Payment Entry de COLPROCAH deja la factura pagada, se
+# crea en FAM un Loan Repayment por línea contra la cuenta por cobrar a COLPROCAH, que se liquida con los
+# traslados. Los préstamos anteriores a 2026 siguen con PREST-PER y el flujo de siempre.
 
 COLPROCAH = "Colegio de Profesionales en Ciencias Agrícolas de Honduras"
 FAM = "Fondo de Ayuda Mutua"
 ITEM = "PREST-FAM"
 TEMPLATE_ITEM = "PREST-PER"
 
-# company: (account_number, account_name, parent_account_number, account_type)
+# company: (account_number, account_name, parent_account_number, account_type); no parent: must exist
 ACCOUNTS = {
-	COLPROCAH: ("20001030", "CXP FAM PRESTAMOS LENDING", "20001", "Income Account"),
+	COLPROCAH: ("20001004", "CXPAGAR FAM PRESTAMOS", None, None),
 	FAM: ("11301026", "CXC COLPROCAH COBROS PRESTAMOS", "11301", ""),
 }
 
@@ -29,7 +29,16 @@ CLOSED_LOAN_STATUSES = ("Draft", "Sanctioned", "Closed", "Settled", "Written Off
 
 
 def get_account(company):
-	return frappe.db.get_value("Account", {"company": company, "account_number": ACCOUNTS[company][0]})
+	"""The account with that number, provided it is the one we mean: numbers are reused across sites."""
+	number, name = ACCOUNTS[company][:2]
+	account = frappe.db.get_value(
+		"Account", {"company": company, "account_number": number}, ["name", "account_name"], as_dict=True
+	)
+	if not account:
+		return None
+	if " ".join(account.account_name.split()).upper() != name:
+		frappe.throw(_("La cuenta {0} de {1} es {2}, se esperaba {3}.").format(number, company, account.name, name))
+	return account.name
 
 
 def is_active():
@@ -102,7 +111,7 @@ def setup_fam_collections():
 	create_custom_fields(get_custom_fields(), update=True)
 
 	for company, (number, name, parent_number, account_type) in ACCOUNTS.items():
-		if get_account(company):
+		if get_account(company) or not parent_number:
 			continue
 		parent = frappe.db.get_value("Account", {"company": company, "account_number": parent_number})
 		frappe.get_doc(
@@ -114,6 +123,10 @@ def setup_fam_collections():
 			account_type=account_type,
 		).insert(ignore_permissions=True)
 
+	payable = get_account(COLPROCAH)
+	if not payable:
+		frappe.throw(_("Falta la cuenta {0} {1} de {2}.").format(*ACCOUNTS[COLPROCAH][:2], COLPROCAH))
+
 	if not frappe.db.exists("Item", ITEM):
 		template = frappe.get_doc("Item", TEMPLATE_ITEM)
 		frappe.get_doc(
@@ -124,8 +137,10 @@ def setup_fam_collections():
 			item_group=template.item_group,
 			stock_uom=template.stock_uom,
 			is_stock_item=0,
-			item_defaults=[{"company": COLPROCAH, "income_account": get_account(COLPROCAH)}],
+			item_defaults=[{"company": COLPROCAH, "income_account": payable}],
 		).insert(ignore_permissions=True)
+	else:
+		frappe.db.set_value("Item Default", {"parent": ITEM, "company": COLPROCAH}, "income_account", payable)
 
 
 @contextmanager
