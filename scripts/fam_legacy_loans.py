@@ -14,7 +14,7 @@ Sources:
 
 Run from the bench sites dir:
   ../env/bin/python -W ignore ../apps/colprocah_colegio/scripts/fam_legacy_loans.py \
-      [report|build|reclass] [--site SITE] [--cutover 2026-06-30] [--out DIR] [--only 048/25 ...] [--commit] [--submit]
+      [report|build|reclass] [--site SITE] [--cutover 2026-06-30] [--since 2026-01-01] [--out DIR] [--only 048/25 ...] [--commit] [--submit]
 
 Writes loans.csv, events.csv, unmatched.csv (and build.csv) to --out and prints a summary.
 """
@@ -188,7 +188,7 @@ def load_colprocah():
 	return invoices
 
 
-def build(cutover):
+def build(cutover, since=None):
 	customers = Customers()
 	rows, lines = load_fam()
 	invoices = load_colprocah()
@@ -369,13 +369,15 @@ def build(cutover):
 		l.overpaid = -bal if bal < 0 else 0
 		l.interest_by_year = {y: round(v, 2) for y, v in sorted(interest_by_year.items())}
 		l.payments = [(e[1], e[3], e[4]) for e in pays if e[1] <= cutover]
-		l.skip_reason = skip_reason(l, cutover)
+		l.skip_reason = skip_reason(l, cutover, since)
 
 	return loans, events, unmatched, rows
 
 
-def skip_reason(loan, cutover):
+def skip_reason(loan, cutover, since=None):
 	"""Why a loan can't be rebuilt from the books; empty when it can."""
+	if since and loan.disbursed_on < since:
+		return f"disbursed before {since}"
 	if loan.balance_at_cutover <= 0:
 		return "closed or not yet disbursed"
 	if not loan.payments:
@@ -579,6 +581,7 @@ def main():
 	parser.add_argument("action", nargs="?", default="report", choices=["report", "build", "reclass"])
 	parser.add_argument("--site", default=SITE)
 	parser.add_argument("--cutover", default="2026-06-30")
+	parser.add_argument("--since", help="only rebuild loans disbursed from this date, e.g. 2026-01-01")
 	parser.add_argument("--out", default=".")
 	parser.add_argument("--only", nargs="*", help="build only these loan numbers, e.g. 048/25")
 	parser.add_argument("--commit", action="store_true", help="build/reclass: save (default rolls back)")
@@ -589,7 +592,7 @@ def main():
 	frappe.init(args.site, sites_path=".")
 	frappe.connect()
 	frappe.set_user("Administrator")
-	loans, events, unmatched, rows = build(cutover)
+	loans, events, unmatched, rows = build(cutover, args.since and date.fromisoformat(args.since))
 
 	os.makedirs(args.out, exist_ok=True)
 	fields = [
