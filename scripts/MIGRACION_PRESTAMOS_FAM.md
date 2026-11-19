@@ -167,13 +167,13 @@ Pasos 1–3 **implementados** en `colprocah_colegio/fam_cobros.py` (probados en 
    (`prestamo_fam`, enlace a Loan, obligatorio para `PREST-FAM`) y muestra su *Número de Préstamo*. Al
    validar la factura se exige que el préstamo esté validado, sea de FAM, del mismo cliente y no esté
    cerrado; el selector solo ofrece los préstamos abiertos del cliente. Los préstamos anteriores a 2026
-   siguen con `PREST-PER`; en FAM los dos se separan (11301026 para Lending, 11301001 para los anteriores).
+   siguen con `PREST-PER`; en FAM los dos se separan (11301009 para Lending, 11301001 para los anteriores).
 2. **Repago automático en FAM.** Al validar un Payment Entry de COLPROCAH (tipo *Receive*), por cada
    factura que queda **pagada por completo** se crea en FAM un Loan Repayment (*Normal Repayment*) por cada
-   línea `PREST-FAM`, con la fecha del pago, contra la cuenta nueva `11301026 - CXC COLPROCAH COBROS
-   PRESTAMOS` de FAM (se asigna como cuenta de pago del repago; un Modo de Pago no sirve porque ERPNext solo
-   acepta cuentas de banco, caja o por cobrar con tercero). En FAM: Dr 11301026 / Cr 11301022 capital /
-   Cr intereses. El repago guarda la factura, la línea y el pago de COLPROCAH (`colprocah_sales_invoice`,
+   línea `PREST-FAM`, con la fecha del pago, contra la cuenta por cobrar a COLPROCAH que FAM ya tiene,
+   `11301009 - CXC PRESTAMOS FAM` (se asigna como cuenta de pago del repago; un Modo de Pago no sirve porque
+   ERPNext solo acepta cuentas de banco, caja o por cobrar con tercero). En FAM: Dr 11301009 / Cr 11301022
+   capital / Cr intereses. El repago guarda la factura, la línea y el pago de COLPROCAH (`colprocah_sales_invoice`,
    `colprocah_invoice_item`, `colprocah_payment_entry`).
    - **Monto de la línea, el que sea.** El monto de `PREST-FAM` se aplica tal cual al préstamo, sea menor o
      mayor que la cuota. Antes se generan en Lending las cuotas vencidas a la fecha del pago; lo que está
@@ -189,15 +189,17 @@ Pasos 1–3 **implementados** en `colprocah_colegio/fam_cobros.py` (probados en 
      reprogramaciones que crea, y quien registra el pago no tiene roles de Lending. El repago guarda el pago
      y la factura de COLPROCAH que lo originaron.
 3. **Traslados y conciliación.** Las transferencias de COLPROCAH a FAM se registran a mano: en COLPROCAH
-   Dr `20001004` / Cr banco; en FAM Dr banco / Cr `11301026` por la parte de préstamos Lending y Cr
-   `11301001` por la de préstamos anteriores. Como `20001004` es compartida, el reporte **Conciliacion
-   Prestamos FAM COLPROCAH** (a una fecha) no compara saldos de cuentas: compara las cuotas `PREST-FAM`
-   facturadas en COLPROCAH con los repagos creados en FAM, detalla las cuotas sin repago (factura con
-   saldo, pagada sin repago o nota de crédito) y muestra el saldo de `11301026`, pendiente de traslado.
+   Dr `20001004` / Cr banco; en FAM Dr banco / Cr `11301009` por la parte de préstamos Lending y Cr
+   `11301001` por la de préstamos anteriores. Como las dos cuentas tienen saldos anteriores a Lending
+   (`11301009`: L 610,044.84 de 2023–2024), el reporte **Conciliacion Prestamos FAM COLPROCAH** (a una
+   fecha) no compara saldos de cuentas: compara las cuotas `PREST-FAM` facturadas en COLPROCAH con los
+   repagos creados en FAM, detalla las cuotas sin repago (factura con saldo, pagada sin repago o nota de
+   crédito) y muestra el saldo de `11301009` como referencia.
 
-La cuenta de FAM, el artículo y los campos se crean solos en `bench migrate` (`after_migrate`), solo si
-Lending y las dos empresas existen. Las cuentas se buscan por número **y nombre**: si el número lo usa otra
-cuenta, el migrate se detiene con un error en vez de usar la cuenta equivocada.
+Se usan cuentas que ya existen; el artículo y los campos se crean solos en `bench migrate`
+(`after_migrate`), solo si Lending y las dos empresas existen. Las cuentas se buscan por número **y
+nombre**: si falta una o el número lo usa otra cuenta, el migrate se detiene con un error en vez de usar la
+cuenta equivocada (en producción el número 11301026 quedó libre otra vez).
 
 ### 6.1 Prueba en desarrollo
 
@@ -206,7 +208,7 @@ del 18-11-2026 con CO-I 120 + `PREST-FAM` 3,799.81, todo revertido al final:
 
 - Factura sin préstamo y con préstamo de otro cliente: rechazadas.
 - Pago parcial de 1,000: sin repago, aviso.
-- Pago del saldo: repago de 3,799.81 (capital 2,933.51, intereses 866.30) con Dr 11301026 3,799.81 /
+- Pago del saldo: repago de 3,799.81 (capital 2,933.51, intereses 866.30) con Dr 11301009 3,799.81 /
   Cr 11301022 2,933.51 / Cr 11301003 866.30; el reporte cuadra en cero.
 - Anulación del pago: repago anulado; nuevo pago: repago creado otra vez.
 

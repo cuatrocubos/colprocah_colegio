@@ -6,7 +6,7 @@ from colprocah_colegio.fam_cobros import COLPROCAH, FAM, ITEM, get_account, is_a
 
 # COLPROCAH's payable to FAM is shared with the legacy PREST-PER loans, so its balance can't be compared.
 # Instead: PREST-FAM lines billed in COLPROCAH vs the Loan Repayments they produced in FAM; the difference
-# is the lines without a repayment. FAM's receivable from COLPROCAH is what is still to be transferred.
+# is the lines without a repayment. FAM's receivable from COLPROCAH also carries balances from before Lending.
 
 
 def execute(filters=None):
@@ -26,7 +26,10 @@ def execute(filters=None):
 		summary(_("Diferencia"), billed - repaid, bold=True),
 		summary(_("Cuotas {0} sin repago en FAM (detalle abajo)").format(ITEM), pending),
 		summary(_("Sin explicar"), billed - repaid - pending, bold=True),
-		summary(_("Pendiente de traslado de COLPROCAH a FAM ({0})").format(receivable), balance(receivable, to_date)),
+		summary(
+			_("Saldo por cobrar a COLPROCAH en FAM ({0}), incluye saldos anteriores a Lending").format(receivable),
+			balance(receivable, to_date),
+		),
 	]
 	if lines:
 		data.append({})

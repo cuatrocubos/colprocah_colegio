@@ -11,18 +11,18 @@ from colprocah_colegio.lending import lending_installed
 #
 # COLPROCAH factura la cuota con el artículo PREST-FAM, ligado al préstamo de FAM, contra su cuenta por pagar
 # a FAM de siempre (la misma de PREST-PER). Cuando un Payment Entry de COLPROCAH deja la factura pagada, se
-# crea en FAM un Loan Repayment por línea contra la cuenta por cobrar a COLPROCAH, que se liquida con los
-# traslados. Los préstamos anteriores a 2026 siguen con PREST-PER y el flujo de siempre.
+# crea en FAM un Loan Repayment por línea contra su cuenta por cobrar a COLPROCAH por préstamos, que se
+# liquida con los traslados. Los préstamos anteriores a 2026 siguen con PREST-PER y el flujo de siempre.
 
 COLPROCAH = "Colegio de Profesionales en Ciencias Agrícolas de Honduras"
 FAM = "Fondo de Ayuda Mutua"
 ITEM = "PREST-FAM"
 TEMPLATE_ITEM = "PREST-PER"
 
-# company: (account_number, account_name, parent_account_number, account_type); no parent: must exist
+# company: (account_number, account_name) of the existing payable / receivable between both companies
 ACCOUNTS = {
-	COLPROCAH: ("20001004", "CXPAGAR FAM PRESTAMOS", None, None),
-	FAM: ("11301026", "CXC COLPROCAH COBROS PRESTAMOS", "11301", ""),
+	COLPROCAH: ("20001004", "CXPAGAR FAM PRESTAMOS"),
+	FAM: ("11301009", "CXC PRESTAMOS FAM"),
 }
 
 CLOSED_LOAN_STATUSES = ("Draft", "Sanctioned", "Closed", "Settled", "Written Off")
@@ -30,7 +30,7 @@ CLOSED_LOAN_STATUSES = ("Draft", "Sanctioned", "Closed", "Settled", "Written Off
 
 def get_account(company):
 	"""The account with that number, provided it is the one we mean: numbers are reused across sites."""
-	number, name = ACCOUNTS[company][:2]
+	number, name = ACCOUNTS[company]
 	account = frappe.db.get_value(
 		"Account", {"company": company, "account_number": number}, ["name", "account_name"], as_dict=True
 	)
@@ -104,28 +104,17 @@ def get_custom_fields():
 
 
 def setup_fam_collections():
-	"""Custom fields, accounts and item; safe to run on every migrate."""
+	"""Custom fields and item; safe to run on every migrate."""
 	if not is_active():
 		return
 
 	create_custom_fields(get_custom_fields(), update=True)
 
-	for company, (number, name, parent_number, account_type) in ACCOUNTS.items():
-		if get_account(company) or not parent_number:
-			continue
-		parent = frappe.db.get_value("Account", {"company": company, "account_number": parent_number})
-		frappe.get_doc(
-			doctype="Account",
-			company=company,
-			account_number=number,
-			account_name=name,
-			parent_account=parent,
-			account_type=account_type,
-		).insert(ignore_permissions=True)
+	for company, (number, name) in ACCOUNTS.items():
+		if not get_account(company):
+			frappe.throw(_("Falta la cuenta {0} {1} de {2}.").format(number, name, company))
 
 	payable = get_account(COLPROCAH)
-	if not payable:
-		frappe.throw(_("Falta la cuenta {0} {1} de {2}.").format(*ACCOUNTS[COLPROCAH][:2], COLPROCAH))
 
 	if not frappe.db.exists("Item", ITEM):
 		template = frappe.get_doc("Item", TEMPLATE_ITEM)
